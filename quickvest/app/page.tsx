@@ -36,7 +36,7 @@ export default function LandingPage() {
           </p>
           <Button
             size="lg"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/onboarding?from=signup")}
             className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
           >
             Get Started
