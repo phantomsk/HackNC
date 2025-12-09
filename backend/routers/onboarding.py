@@ -1,21 +1,102 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
+from dotenv import load_dotenv
+import google.generativeai as genai
+import os
+import json
 
-router = APIRouter()
+load_dotenv()
 
-class ChatRequest(BaseModel):
-    user_id: str
-    message: str
+key = os.environ.get("GEMINI_API_KEY")
+if not key:
+    raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
 
-class ChatResponse(BaseModel):
-    next_question: str
-    progress: float
+genai.configure(api_key=key)
 
-@router.post("/chat/next-question", response_model=ChatResponse)
-def next_question(request: ChatRequest):
-    # TODO: Implement logic
-    return ChatResponse(next_question="What is your name?", progress=0.1)
+model = genai.GenerativeModel("gemini-2.0-flash")
+
+# --- Router ---
+router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
+
+class OnboardingConfigResponse(BaseModel):
+    api_base_url: str
+    onboarding_base: str
+
+@router.get("/config", response_model=OnboardingConfigResponse)
+def get_onboarding_config(request: Request):
+    """
+    Returns configuration details for the onboarding process.
+    """
+    base_url = str(request.base_url).rstrip("/")
+    onboarding_base = f"{base_url}/api/onboarding"
+    return OnboardingConfigResponse(
+        api_base_url=base_url,
+        onboarding_base=onboarding_base
+    )
+
+class AccountCreateFromLicense(BaseModel):
+    account_id: str
+    success: bool
+    extracted_data: dict
+
+
+@router.post("/account/create-from-license", response_model=AccountCreateFromLicense)
+async def account_create_from_license(file: UploadFile = File(...)):
+    """
+    Pipeline:
+    Accept driver's license image
+    Extract data using Gemini
+    Account is created from auto-parsed data
+    """
+    try: 
+        content = await file.read()
+        prompt = """
+        You are an identity document parsing engine. 
+        The user is uploading their driver's license. Extract all fields relevant for opening a financial or investment account.
+        Return ONLY valid JSON with the following fields:
+        {
+            "first_name": "",
+            "last_name": "",
+            "full_name": "",
+            "date_of_birth": "",
+            "address": "",
+            "city": "",
+            "state": "",
+            "zip_code": "",
+            "country": "",
+            "license_number": "",
+            "issue_date": "",
+            "expiry_date": ""
+            "document_type": "driver_license"
+            "raw_text": ""
+            }
+            
+            If a field is missing in the document, return an empty string for that field but keep the field present.
+            """
+        
+        response = model.generate_content(
+            [
+                prompt,
+                content
+            ]
+        )
+
+        extracted = json.loads(response.text)
+
+        #TODO: Create Account creation logic here (DB insertion, etc)
+        #Simulate account_id for now
+        account_id = f"acct_{extracted.get('license_number', 'unknown')}"
+
+        return AccountCreateFromLicense(
+            amount_id=account_id,
+            success=True,
+            extracted_data=extracted
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 class DocExtractResponse(BaseModel):
     extracted_data: dict

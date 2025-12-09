@@ -1,3 +1,4 @@
+"use client"
 import MessageBubble from "./MessageBubble"
 import UploadDropzone from "./UploadDropzone"
 import ChoiceCard from "./ChoiceCard"

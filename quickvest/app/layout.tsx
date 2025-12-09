@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Suspense } from "react"
+import Link from "next/link"
 
 export const metadata: Metadata = {
   title: "QuickVest - Smart Investing Made Simple",

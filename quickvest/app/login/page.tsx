@@ -41,10 +41,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center px-4 page-transition">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        <a href="/" className="flex items-center justify-center gap-2 mb-8 cursor-pointer" aria-label="Go to homepage">
           <TrendingUp className="h-10 w-10 text-primary" />
           <span className="text-3xl font-bold text-foreground">QuickVest</span>
-        </div>
+        </a>
 
         <Card className="border-border shadow-xl">
           <CardHeader className="space-y-1">

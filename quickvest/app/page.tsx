@@ -11,10 +11,10 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 page-transition">
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2 cursor-pointer" aria-label="Go to homepage">
           <TrendingUp className="h-8 w-8 text-primary" />
           <span className="text-2xl font-bold text-foreground">QuickVest</span>
-        </div>
+        </a>
         <Button
           variant="outline"
           onClick={() => router.push("/login")}
@@ -36,7 +36,7 @@ export default function LandingPage() {
           </p>
           <Button
             size="lg"
-            onClick={() => router.push("/onboarding?from=signup")}
+            onClick={() => router.push("/login")}
             className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
           >
             Get Started
