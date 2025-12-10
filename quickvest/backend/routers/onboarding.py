@@ -51,6 +51,12 @@ async def account_create_from_license(file: UploadFile = File(...)):
     """
     try: 
         content = await file.read()
+
+        image_part = {
+            "mime_type": file.content_type or "image/jpeg",
+            "data": content,
+        }
+
         prompt = """
         You are an identity document parsing engine. 
         The user is uploading their driver's license. Extract all fields relevant for opening a financial or investment account.
@@ -78,7 +84,7 @@ async def account_create_from_license(file: UploadFile = File(...)):
         response = model.generate_content(
             [
                 prompt,
-                content
+                image_part
             ]
         )
 
@@ -89,14 +95,62 @@ async def account_create_from_license(file: UploadFile = File(...)):
         account_id = f"acct_{extracted.get('license_number', 'unknown')}"
 
         return AccountCreateFromLicense(
-            amount_id=account_id,
+            account_id=account_id,
             success=True,
             extracted_data=extracted
         )
+    
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=500,
+            detail="Gemini response was not valid JSON. Check prompt or response text."
+        )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print("Error in account_create_from_license:", repr(e))
+        raise HTTPException(status_code=500, detail="Failed to process ID image.")
+    
+    
 
+class QuizHelpRequest(BaseModel):
+    question_text: str   # quiz question asked to user
+    user_message: str    # what user asked about the question
+
+class QuizHelpResponse(BaseModel):
+    answer: str
+
+@router.post("/quiz/help", response_model=QuizHelpResponse)
+def quiz_help(payload: QuizHelpRequest):
+    """
+    Use Gemini to help answer a clarifying question on quiz question.
+    """
+
+    try: 
+        prompt = f"""
+        You are a helpful investment onboarding assistant.
+
+        The user is taking a suitability / risk quiz. They were asked
+        the following question:
+
+        QUESTION:
+        {payload.question_text}
+
+        The user then asked this follow-up question:
+
+        USER:
+        {payload.user_message}
+
+        Explain clearly what the question means, any terminology,
+        and how the user should think about answering it.
+        Be concise and user-friendly.
+        """
+
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+
+        return QuizHelpResponse(answer=text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 class DocExtractResponse(BaseModel):
     extracted_data: dict
